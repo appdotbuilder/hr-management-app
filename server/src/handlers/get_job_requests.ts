@@ -1,8 +1,21 @@
 
+import { db } from '../db';
+import { jobRequestsTable } from '../db/schema';
 import { type JobRequest } from '../schema';
 
 export const getJobRequests = async (): Promise<JobRequest[]> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is fetching all job requests from the database.
-    return [];
+  try {
+    const results = await db.select()
+      .from(jobRequestsTable)
+      .execute();
+
+    return results.map(jobRequest => ({
+      ...jobRequest,
+      status: jobRequest.status as 'open' | 'closed' | 'cancelled', // Type assertion for status
+      deadline: jobRequest.deadline ? new Date(jobRequest.deadline) : null // Convert date string to Date object
+    }));
+  } catch (error) {
+    console.error('Failed to fetch job requests:', error);
+    throw error;
+  }
 };

@@ -1,11 +1,13 @@
 
+import { db } from '../db';
+import { jobRequestsTable } from '../db/schema';
 import { type CreateJobRequestInput, type JobRequest } from '../schema';
 
 export const createJobRequest = async (input: CreateJobRequestInput): Promise<JobRequest> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is creating a new job request for recruitment purposes.
-    return Promise.resolve({
-        id: 0,
+  try {
+    // Insert job request record
+    const result = await db.insert(jobRequestsTable)
+      .values({
         title: input.title,
         department: input.department,
         position: input.position,
@@ -13,9 +15,20 @@ export const createJobRequest = async (input: CreateJobRequestInput): Promise<Jo
         job_description: input.job_description,
         requirements: input.requirements,
         requested_by: input.requested_by,
-        requested_date: new Date(),
-        deadline: input.deadline || null,
-        status: input.status,
-        created_at: new Date()
-    } as JobRequest);
+        deadline: input.deadline ? input.deadline.toISOString().split('T')[0] : null,
+        status: input.status
+      })
+      .returning()
+      .execute();
+
+    const jobRequest = result[0];
+    return {
+      ...jobRequest,
+      status: jobRequest.status as 'open' | 'closed' | 'cancelled',
+      deadline: jobRequest.deadline ? new Date(jobRequest.deadline) : null
+    };
+  } catch (error) {
+    console.error('Job request creation failed:', error);
+    throw error;
+  }
 };
